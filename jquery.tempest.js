@@ -24,76 +24,76 @@
 // JSLint
 "use strict";
 
-(function ($) {
+(function($) {
     // PRIVATE VARIABLES
     var templateCache = {},
-        
-        // TAG REGULAR EXPRESSIONS
-        // Overwrite these if you want, but don't blame me when stuff goes wrong.
+
+    // TAG REGULAR EXPRESSIONS
+    // Overwrite these if you want, but don't blame me when stuff goes wrong.
         OPEN_VAR_TAG = /\{\{[\s]*?/g,
         CLOSE_VAR_TAG = /[\s]*?\}\}/g,
         OPEN_BLOCK_TAG = /\{%[\s]*?/g,
         CLOSE_BLOCK_TAG = /[\s]*?%\}/g,
 
-        // Probably, you don't want to mess with these, as they are built from 
-        // the ones above.
-        VAR_TAG = new RegExp(OPEN_VAR_TAG.source + 
-                             "[\\w\\-\\.]+?" + 
+    // Probably, you don't want to mess with these, as they are built from 
+    // the ones above.
+        VAR_TAG = new RegExp(OPEN_VAR_TAG.source +
+                             "[\\w\\-\\.]+?" +
                              CLOSE_VAR_TAG.source, "g"),
 
-        BLOCK_TAG = new RegExp(OPEN_BLOCK_TAG.source + 
-                               "[\\w]+?(?:[ ]+?[\\w\\-\\.]*?)*?" + 
+        BLOCK_TAG = new RegExp(OPEN_BLOCK_TAG.source +
+                               "[\\w]+?(?:[ ]+?[\\w\\-\\.]*?)*?" +
                                CLOSE_BLOCK_TAG.source, "g"),
 
-        END_BLOCK_TAG = new RegExp(OPEN_BLOCK_TAG.source + 
-                                   "end[\\w]*?" + 
+        END_BLOCK_TAG = new RegExp(OPEN_BLOCK_TAG.source +
+                                   "end[\\w]*?" +
                                    CLOSE_BLOCK_TAG.source, "g"),
 
-        // All block tags stored in here. Tags have a couple things to work 
-        // with:
-        //
-        // * "args" property is set before render: 
-        //     - Example: {% tag_type arg1 arg2 foo bar %}
-        //         * The "args" property would be set to 
-        //               ["arg1", "arg2", "foo", "bar"] 
-        //           in this example. The tag's render method could look them 
-        //           up in the context object, or could do whatever it wanted 
-        //           to do with it.
-        // * "subNodes" property which is an array of all the nodes between 
-        //   the block tag and it's corresponding {% end... %} tag
-        //     - NOTE: This property is only set for a block if it has the 
-        //       "expectsEndTag" property set to true.
-        // * Every block tag should have a "render" method that takes one 
-        //   argument: a context object. It should return a string.
+    // All block tags stored in here. Tags have a couple things to work 
+    // with:
+    //
+    // * "args" property is set before render: 
+    //     - Example: {% tag_type arg1 arg2 foo bar %}
+    //         * The "args" property would be set to 
+    //               ["arg1", "arg2", "foo", "bar"] 
+    //           in this example. The tag's render method could look them 
+    //           up in the context object, or could do whatever it wanted 
+    //           to do with it.
+    // * "subNodes" property which is an array of all the nodes between 
+    //   the block tag and it's corresponding {% end... %} tag
+    //     - NOTE: This property is only set for a block if it has the 
+    //       "expectsEndTag" property set to true.
+    // * Every block tag should have a "render" method that takes one 
+    //   argument: a context object. It should return a string.
         BLOCK_NODES = {
             "if": {
                 expectsEndTag: true,
-                render: function (context) {
+                render: function(context) {
                     var rendered_nodes = [],
                         subNodes = this.subNodes;
 
                     // Check the truthiness of the argument.
                     if (!!context[this.args[0]]) {
-                        $.each(subNodes, function (i, node) {
+                        $.each(subNodes, function(i, node) {
                             rendered_nodes.push(node.render(context));
                         });
-                    } 
+                    }
 
                     return rendered_nodes.join("");
                 }
             }
         },
 
-        // Base text node object for prototyping.
+    // Base text node object for prototyping.
         baseTextNode = {
-            render: function (context) {
+            render: function(context) {
                 return this.text || "";
             }
         },
 
-        // Base variable node object for prototyping.
+    // Base variable node object for prototyping.
         baseVarNode = {
-            render: function (context) {
+            render: function(context) {
                 var val = context[this.name] === undefined ?
                     "" :
                     context[this.name];
@@ -120,15 +120,15 @@
 
     // Some browsers don't return the grouped part of the RegExp with the array,
     // so we must accomodate them.
-    var split = (function () {
+    var split = (function() {
         if ("abc".split(/(b)/).length === 3) {
-            return function (str, delimiter) {
+            return function(str, delimiter) {
                 return String.prototype
                              .split
                              .call(str, delimiter);
             };
         } else {
-            return function (str, delimiter) {
+            return function(str, delimiter) {
                 if (Object.prototype
                           .toString
                           .call(delimiter) === "[object RegExp]") {
@@ -150,11 +150,11 @@
                             match_str = "";
                         }
                     }
-                    
+
                     if (match_str !== "") {
                         arr.push(match_str);
                     }
-                    
+
                     return arr;
                 } else {
                     return String.prototype
@@ -163,7 +163,7 @@
                 }
             };
         }
-    }());
+    } ());
 
     function isBlockTag(token) {
         return token.search(BLOCK_TAG) !== -1;
@@ -183,8 +183,8 @@
     function cleanVal(val) {
         if (val instanceof $) {
             return jQueryToString(val);
-        } else if (!isArray(val) && typeof(val) === "object") { 
-            if (typeof(val.toHTML) === "function") {
+        } else if (!isArray(val) && typeof (val) === "object") {
+            if (typeof (val.toHTML) === "function") {
                 return cleanVal(val.toHTML());
             } else {
                 return val.toString();
@@ -224,7 +224,7 @@
         if (obj === undefined) {
             return obj;
         }
-        var O = function () {};
+        var O = function() { };
         O.prototype = obj;
         return new O();
     }
@@ -232,8 +232,8 @@
     // Return an array of key/template pairs.
     function storedTemplates() {
         var cache = [];
-        $.each(templateCache, function (key, templ) {
-            cache.push([ key, templ ]);
+        $.each(templateCache, function(key, templ) {
+            cache.push([key, templ]);
         });
         return cache;
     }
@@ -264,18 +264,18 @@
     // Split a template in to tokens which will eventually be converted to 
     // nodes and then rendered.
     function tokenize(templ) {
-        return (function (arr) {
+        return (function(arr) {
             var tokens = [];
             for (i = 0; i < arr.length; i++) {
-                (function (token) {
-                     return token === "" ? 
-                        null : 
+                (function(token) {
+                    return token === "" ?
+                        null :
                         tokens.push(token);
-                }(arr[i]));
+                } (arr[i]));
             }
             return tokens;
-        }(split(templ, new RegExp("(" + VAR_TAG.source + "|" + 
-                                  BLOCK_TAG.source + "|" + 
+        } (split(templ, new RegExp("(" + VAR_TAG.source + "|" +
+                                  BLOCK_TAG.source + "|" +
                                   END_BLOCK_TAG.source + ")"))));
     }
 
@@ -309,35 +309,35 @@
     // A recursive function that terminates either when all tokens have 
     // been converted to nodes or an end-block tag is found.
     function makeNodes(tokens) {
-        return (function (nodes, tokens) {
+        return (function(nodes, tokens) {
             var token = tokens[0];
             return tokens.length === 0 ?
-                       [nodes, [], true] : 
-                   isEndTag(token) ? 
+                       [nodes, [], true] :
+                   isEndTag(token) ?
                        [nodes, cdr(tokens)] :
-                   isVarTag(token) ? 
+                   isVarTag(token) ?
                        arguments.callee(append(makeVarNode(token), nodes), cdr(tokens)) :
-                   isBlockTag(token) ? 
+                   isBlockTag(token) ?
                        makeBlockNode(nodes, tokens, arguments.callee) :
-                   // Else assume it is a text node.
+            // Else assume it is a text node.
                        arguments.callee(append(makeTextNode(token), nodes), cdr(tokens));
-                   
-        }([], tokens));
+
+        } ([], tokens));
     }
 
     // Split a block tags contents in to an array of bits that contains the
     // type of block node, and any arguments that were passed to the block
     // node if they exist.
     function makeBits(blockToken) {
-        return (function (bits, split) {
+        return (function(bits, split) {
             // Remove empty strings and strip whitespace.
             for (i = 0; i < split.length; i++) {
-                (function (bit) {
+                (function(bit) {
                     return bit === "" ? null : bits.push(bit);
-                }(strip(split[i])));
+                } (strip(split[i])));
             }
             return bits;
-        }([], split(blockToken.replace(OPEN_BLOCK_TAG, "")
+        } ([], split(blockToken.replace(OPEN_BLOCK_TAG, "")
                               .replace(CLOSE_BLOCK_TAG, ""),
                    /[\s]+?/)));
     }
@@ -349,13 +349,13 @@
         // its arguments.
         var bits = makeBits(tokens[0]),
 
-            // The type of block tag is the first of the bits, the rest 
-            // (if present) are args
+        // The type of block tag is the first of the bits, the rest 
+        // (if present) are args
             type = bits[0],
             args = cdr(bits),
 
-            // Make the node from the set of block tags that Tempest knows 
-            // about.
+        // Make the node from the set of block tags that Tempest knows 
+        // about.
             node = makeObj(BLOCK_NODES[type]),
             resultsArray;
 
@@ -396,7 +396,7 @@
         var template = chooseTemplate(str),
             lines = [];
 
-        renderEach(objects, function (i, obj) {
+        renderEach(objects, function(i, obj) {
             var resultsArray = makeNodes(tokenize(template), obj),
                 nodes = resultsArray[0];
 
@@ -410,23 +410,23 @@
             }
 
             // Render each node and push it to the lines.
-            $.each(nodes, function (i, node) {
+            $.each(nodes, function(i, node) {
                 lines.push(node.render(obj));
             });
         });
 
         // Return the joined templates as jQuery objects if it appears to start
         // with an HTML tag, otherwise just return the string itself.
-        return (function (str) {
+        return (function(str) {
             return str.charAt(0) === "<" ?
                 $(str) :
                 str;
-        }(lines.join("")));
+        } (lines.join("")));
     }
 
     // EXTEND JQUERY OBJECT
     $.extend({
-        tempest: function () {
+        tempest: function() {
             var args = arguments;
 
             if (args.length === 0) {
@@ -434,23 +434,23 @@
                 // Return key/template pairs of all stored templates.
                 return storedTemplates();
 
-            } else if (args.length === 2 && 
-                       typeof(args[0]) === "string" && 
-                       typeof(args[1]) === "object") {
+            } else if (args.length === 2 &&
+                       typeof (args[0]) === "string" &&
+                       typeof (args[1]) === "object") {
 
                 // Render the supplied template (args[0], template name of
                 // existing or one-time-use template) with the context data
                 // (args[1]).
                 return renderToJQ(args[0], args[1]);
-                
-            } else if (args.length === 1 && typeof(args[0]) === "string") {
+
+            } else if (args.length === 1 && typeof (args[0]) === "string") {
 
                 // Template getter.
                 return templateCache[args[0]];
 
-            } else if (args.length === 2 && 
-                       typeof(args[0]) === "string" && 
-                       typeof(args[1]) === "string") {
+            } else if (args.length === 2 &&
+                       typeof (args[0]) === "string" &&
+                       typeof (args[1]) === "string") {
 
                 // Template setter.
                 templateCache[args[0]] = args[1].replace(/^\s+/g, "")
@@ -469,6 +469,41 @@
             }
         }
     });
+
+    $.fn.tempest = function() {
+        var args = arguments;
+        var f = function() { };
+
+        if (args.length == 1 && typeof (args[0]) == "string") {
+            // Creates a new template using the given name and the
+            // HTML of the matched elements. Semantically it may not
+            // make much sense to call it this way when there is more
+            // than one matched element
+            f = function() {
+                $.tempest(args[0], jQueryToString(this));
+            };
+        } else if (args.length == 2 &&
+                  typeof (args[0]) == "string" &&
+                  typeof (args[1]) == "object") {
+            // Inserts the result of rendering the specified template
+            // on the specified data into the set of matched elements
+            f = function() {
+                $(this).html($.tempest(args[0], args[1]));
+            };
+        } else if (args.length == 3 &&
+                   typeof (args[0]) == "string" &&
+                   typeof (args[1]) == "string" &&
+                   typeof (args[2]) == "object") {
+            // Calls the appropriate jQuery function, passing it
+            // the result of rendering the given template on the
+            // data provided
+            f = function() {
+                $(this)[args[0]]($.tempest(args[1], args[2]));
+            };
+        }
+
+        return this.each(f);
+    };
 
     // EXPOSE BLOCK_NODES OBJECT TO ALLOW EXTENSION WITH CUSTOM TAGS
     $.tempest.tags = BLOCK_NODES;
@@ -506,10 +541,10 @@
     }
 
     // GET ALL TEXTAREA TEMPLATES ON READY
-    $(document).ready(function () {
-        $(".tempest-template").each(function (obj) {
+    $(document).ready(function() {
+        $(".tempest-template").each(function(obj) {
             templateCache[$(this).attr('title')] = strip(($(this).val() || $(this).html()).replace(/[\n\r]+/g, " "));
             $(this).remove();
         });
     });
-}(jQuery));
+} (jQuery));
